@@ -1,17 +1,21 @@
 import sys
-#sys.path.insert(0,'./env/lib/python3.9/site-packages')
-
+import pathlib
 import sqlite3
+
+sys.path.insert(0,'/home/tomsmith/apps/flask/www')
 from flask import Flask, render_template, request, url_for, flash, redirect, abort
 from flask import send_from_directory
-
-from flask_httpauth import HTTPBasicAuth #auth
+from flask_httpauth import HTTPBasicAuth #basic auth stuff
 from werkzeug.security import generate_password_hash, check_password_hash #auth
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your secret key'
 
-############################# AUTH ######################################
+
+DB_PATH = f'{pathlib.Path(__file__).parent.resolve()}/mydatabase.db'
+SITEPATH = "/home/tomsmith/apps/flask/www/"
+
+############################ AUTH ######################################
 
 # https://github.com/miguelgrinberg/Flask-HTTPAuth
 users = {
@@ -29,7 +33,7 @@ def verify_password(username, password):
 ##########################################################################
  
 def get_connection():
-    conn = sqlite3.connect('mydatabase.db')
+    conn = sqlite3.connect(SITEPATH +'/mydatabase.db')
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -42,8 +46,7 @@ def dict_factory(cursor, row):
 def get_page(page_id):
     conn = get_connection()
 
-    page = conn.execute('SELECT * FROM pages WHERE id = ?',
-                        (page_id,)).fetchone()
+    page = conn.execute('SELECT * FROM pages WHERE id = ?',(page_id,)).fetchone()
 
     if page is None:
         abort(404)
@@ -53,13 +56,16 @@ def get_page(page_id):
 @app.route('/')
 def index():
     conn = get_connection()
-    user = auth.current_user()
+    
+
     sql = '''
     SELECT pages.*, users.name as owner_name 
     FROM 
     pages 
     INNER JOIN users ON pages.ownerId = users.id; 
     '''
+
+    print(sql, conn)
     pages = conn.execute(sql).fetchall()
 
     
@@ -76,7 +82,7 @@ def index():
         print(tags)
         #page['tags'] = tags
 
-
+    user = auth.current_user()
     conn.close()   
     return render_template('index.html', pages=pages, user=user)
 
@@ -124,7 +130,7 @@ def edit(id):
             flash('Text is required!')
 
         else:
-            conn = get_db_connection()
+            conn = get_connection()
             conn.execute('UPDATE pages SET title = ?, text = ?'
                          ' WHERE id = ?',
                          (title, text, id))
@@ -248,4 +254,7 @@ def search_pages(urlquery=None):
 
     conn.close()
     return render_template('search.html', pages=pages, query=query)
+
+if __name__ == "__main__":
+    app.run()
 
