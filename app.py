@@ -12,8 +12,15 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your secret key'
 
 
-DB_PATH = f'{pathlib.Path(__file__).parent.resolve()}/mydatabase.db'
-SITEPATH = "/home/tomsmith/apps/flask/www/"
+#DB_PATH = f'{pathlib.Path(__file__).parent.resolve()}/mydatabase.db'
+if sys.platform == 'darwin':
+    #local dev
+    SITEPATH = "/Users/tomsmith/Documents/GitHub/flaskapp/"
+else:
+    #hosted
+    SITEPATH = "/home/tomsmith/apps/flask/www/"
+
+
 
 ############################ AUTH ######################################
 
@@ -33,7 +40,9 @@ def verify_password(username, password):
 ##########################################################################
  
 def get_connection():
-    conn = sqlite3.connect(SITEPATH +'/mydatabase.db')
+    fullpath = SITEPATH +'mydatabase.db'
+    print(fullpath)
+    conn = sqlite3.connect(fullpath)
     conn.row_factory = sqlite3.Row
     return conn
 
